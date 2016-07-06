@@ -196,7 +196,49 @@ var sudoku = (function () {
             return true;
         }
 
-        
+        function findSetsRow(row, setSize){
+            var sets = []; 
+
+            for (var column = 0; column < 9; column++){
+                var candidateCell = candidateBoard[row][column];
+
+                if (setSize <= candidateCell.length)
+                    sets.push(candidateCell);
+            }
+
+            return sets; 
+
+        }
+
+        function findSetsColumn(column, setSize){
+            var sets = [];
+
+            for (var row = 0; row < 9; row++){
+                var candidateCell = candidateBoard[row][column];
+
+                if (setSize <= candidateCell.length)
+                    sets.push(candidateCell);
+            }
+
+            return sets;
+        }
+
+        function findSetsGrid(row, column, setSize){
+            var sets = [];
+            var firstCellOfGridCoords = firstCellOfGridCoordinates(row, column);
+
+            for (var i = 0; i < 3; i++){
+                for (var j = 0; j < 3; j++){
+                    var checkedRow = i + firstCellOfGridCoords[0];
+                    var checkedColumn = j + firstCellOfGridCoords[1];
+                    var candidateCell = candidateBoard[checkedRow][checkedColumn];
+
+                     if (setSize <= candidateCell.length)
+                    sets.push(candidateCell);
+                }
+
+            return sets;
+        }
     };
 
     return saga;
