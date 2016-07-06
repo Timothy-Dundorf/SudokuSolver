@@ -2,11 +2,11 @@ var sudoku = (function () {
     var saga = {};
     var rowNumber = 0;
     var columnNumber = 0; 
-    var grid = createArray(9, 9);
+    var candidateBoard = createArray(9, 9);
 
     for (var i = 0; i < 9; i++){
             for (var j = 0; j < 9; j++){
-                grid[i][j] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                candidateBoard[i][j] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             }
         }
      function createArray(length){
@@ -22,32 +22,13 @@ var sudoku = (function () {
     }
 
     saga.iteration = function () {
-        
-
-        
-
         var currentCell = getCell(rowNumber, columnNumber);
 
-        if (currentCell !== null)
-        {
+        if (currentCell !== null){
+            removeFromBoard(rowNumber,columnNumber, currentCell);
+            candidateBoard[rowNumber][columnNumber] = [-1 * currentCell]; 
+            setSolos();
             
-            remover(rowNumber,columnNumber, currentCell);
-            grid[rowNumber][columnNumber] = [-1 * currentCell]; 
-
-            while (returnFirstSolo()[0] != -1)
-            {
-                var firstSolo = returnFirstSolo(); 
-                var soloX = firstSolo[0];
-                var soloY = firstSolo[1];
-                var soloValue = firstSolo[2];
-
-                remover(soloX, soloY, soloValue);
-                grid[soloX][soloY] = [soloValue * -1];
-
-                if(getCell(soloX, soloY) === null)
-                    setCell(soloX, soloY, soloValue);
-
-            }
         }
 
         columnNumber++;
@@ -65,7 +46,7 @@ var sudoku = (function () {
 
        
 
-        function remover(row, column, numberToRemove){
+        function removeFromBoard(row, column, numberToRemove){
             removeFromRow(row, numberToRemove);
             removeFromColumn(column, numberToRemove);
             removeFromGrid(row, column, numberToRemove);
@@ -73,7 +54,7 @@ var sudoku = (function () {
 
         function removeFromRow(row, numberToRemove){
             for(var i = 0; i < 9; i++){
-                grid[row][i] = grid[row][i].filter(function(value){
+                candidateBoard[row][i] = candidateBoard[row][i].filter(function(value){
                     return value != numberToRemove;   
                 });
             }
@@ -81,66 +62,83 @@ var sudoku = (function () {
 
         function removeFromColumn(column, numberToRemove){
             for(var i = 0; i < 9; i++){
-                grid[i][column] = grid[i][column].filter(function(value){
+                candidateBoard[i][column] = candidateBoard[i][column].filter(function(value){
                     return value != numberToRemove;
                 });
             }
         }
 
         function removeFromGrid(row, column, numberToRemove){
-            var gridRow = 0;
-            var gridColumn = 0;
-            if (row <= 2)
-                gridRow = 0; 
-            else if (row <=5)
-                gridRow = 3; 
-            else
-                gridRow = 6;
-
-            if (column <= 2)
-                gridColumn = 0;
-            else if (column <= 5)
-                gridColumn = 3;
-            else 
-                gridColumn = 6;
+            var firstCellOfGridCoords = firstCellOfGridCoordinates(row, column);
 
             for (var i = 0; i < 3; i++){
                 for (var j = 0; j < 3; j++){
-                    grid[gridRow + i][gridColumn + j] = grid[gridRow + i][gridColumn + j].filter(function(value){
-                        return value != numberToRemove;
-                    });
+                    var checkedRow = i + firstCellOfGridCoords[0];
+                    var checkedColumn = j + firstCellOfGridCoords[1];
+
+                    candidateBoard[checkedRow][checkedColumn] = candidateBoard[checkedRow][checkedColumn].filter(function(value){return value != numberToRemove;});
                 }
             }
         }
 
-        function returnFirstSolo()
-        {
-            var soloCoordinates = createArray(3);
-            soloCoordinates[0] = -1;
-            soloCoordinates[1] = -1;
-            soloCoordinates[2] = -1;
+        function firstCellOfGridCoordinates(row, column){
+            var coordinates = [-1, -1];
+            coordinates[0] = firstCellOfGridRowOrColumn(row);
+            coordinates[1] = firstCellOfGridRowOrColumn(column);
 
-            for (var i = 0; i < 9; i++){
-                for (var j = 0; j < 9; j++){
-                    var cell = grid[i][j];
+            return coordinates; 
+        }
+
+        function firstCellOfGridRowOrColumn(rowOrColumn){
+            var coordinate;
+            if (rowOrColumn <= 2)
+                coordinate = 0; 
+            else if (rowOrColumn <=5)
+                coordinate = 3; 
+            else
+                coordinate = 6;
+
+            return coordinate; 
+        }
+
+        function setSolos(){
+            while (returnFirstSolo()[0] != -1){
+                var firstSolo = returnFirstSolo(); 
+                var soloX = firstSolo[0];
+                var soloY = firstSolo[1];
+                var soloValue = firstSolo[2];
+
+                removeFromBoard(soloX, soloY, soloValue);
+                candidateBoard[soloX][soloY] = [soloValue * -1];
+
+                if(getCell(soloX, soloY) === null)
+                    setCell(soloX, soloY, soloValue);
+            }
+        }
+
+        function returnFirstSolo(){
+            var soloCoordinatesAndValue = [-1, -1, -1];
+
+            for (var row = 0; row < 9; row++){
+                for (var column = 0; column < 9; column++){
+                    var cell = candidateBoard[row][column];
 
                     if (cell.length == 1 && cell[0] > 0){
-                        soloCoordinates[0] = i;
-                        soloCoordinates[1] = j;
-                        soloCoordinates[2] = cell[0];
+                        soloCoordinatesAndValue[0] = row;
+                        soloCoordinatesAndValue[1] = column;
+                        soloCoordinatesAndValue[2] = cell[0];
 
-                        return soloCoordinates;
+                        return soloCoordinatesAndValue;
                     }
 
                     cell.forEach(function(item){
-                        if (item > 0)
-                        {
-                            if (isRowSolo(i, item) || isColumnSolo(j, item) || isGridSolo(i, j, item)){
-                                soloCoordinates[0] = i;
-                                soloCoordinates[1] = j;
-                                soloCoordinates[2] = item; 
+                        if (item > 0){
+                            if (isRowSolo(row, item) || isColumnSolo(column, item) || isGridSolo(row, column, item)){
+                                soloCoordinatesAndValue[0] = row;
+                                soloCoordinatesAndValue[1] = column;
+                                soloCoordinatesAndValue[2] = item; 
 
-                                return soloCoordinates;
+                                return soloCoordinatesAndValue;
                             }
                         }
                         
@@ -148,14 +146,13 @@ var sudoku = (function () {
                 }
             }
 
-            return soloCoordinates;
+            return soloCoordinatesAndValue;
         }
 
-        function isRowSolo(row, number)
-        {
+        function isRowSolo(row, number){
             var instances = 0;
-            for(var i = 0; i < 9; i++){
-                if (-1 != grid[row][i].indexOf(number))
+            for(var column = 0; column < 9; column++){
+                if (-1 != candidateBoard[row][column].indexOf(number))
                     instances++;
 
                 if(instances > 1)
@@ -165,11 +162,10 @@ var sudoku = (function () {
             return true; 
         }
 
-        function isColumnSolo(column, number)
-        {
+        function isColumnSolo(column, number){
             var instances = 0;
-            for(var i = 0; i < 9; i++){
-                if (-1 != grid[i][column].indexOf(number))
+            for(var row = 0; row < 9; row++){
+                if (-1 != candidateBoard[row][column].indexOf(number))
                     instances++;
                  
                 if (instances > 1)
@@ -181,27 +177,15 @@ var sudoku = (function () {
 
 
         function isGridSolo(row, column, number){
-            var gridRow = 0;
-            var gridColumn = 0;
+            var firstCellOfGridCoords = firstCellOfGridCoordinates(row, column);
             var instances = 0; 
-
-            if (row <= 2)
-                gridRow = 0; 
-            else if (row <=5)
-                gridRow = 3; 
-            else
-                gridRow = 6;
-
-            if (column <= 2)
-                gridColumn = 0;
-            else if (column <= 5)
-                gridColumn = 3;
-            else 
-                gridColumn = 6;
 
             for (var i = 0; i < 3; i++){
                 for (var j = 0; j < 3; j++){
-                    if (-1 != grid[i + gridRow][j + gridColumn].indexOf(number))
+                    var row = i + firstCellOfGridCoords[0];
+                    var column = j + firstCellOfGridCoords[1];
+
+                    if (-1 != candidateBoard[row][column].indexOf(number))
                         instances++;
 
                     if (instances > 1)
@@ -212,6 +196,7 @@ var sudoku = (function () {
             return true;
         }
 
+        
     };
 
     return saga;
