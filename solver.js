@@ -27,9 +27,8 @@ var sudoku = (function () {
         if (currentCell !== null){
             remove(rowNumber,columnNumber, currentCell);
             candidateBoard[rowNumber][columnNumber] = [-1 * currentCell];
-            handleEliminationRules(); 
             setSolos();
-            
+            handleEliminationRules(); 
         }
 
         columnNumber++;
@@ -100,8 +99,9 @@ var sudoku = (function () {
         }
 
         function setSolos(){
-            while (returnFirstSolo()[0] != -1){
-                var firstSolo = returnFirstSolo(); 
+            var firstSolo = returnFirstSolo();
+
+            while (firstSolo[0] != -1){
                 var soloX = firstSolo[0];
                 var soloY = firstSolo[1];
                 var soloValue = firstSolo[2];
@@ -111,6 +111,8 @@ var sudoku = (function () {
 
                 if(getCell(soloX, soloY) === null)
                     setCell(soloX, soloY, soloValue);
+
+                firstSolo = returnFirstSolo();
             }
         }
 
@@ -135,12 +137,12 @@ var sudoku = (function () {
                                 soloCoordinatesAndValue[0] = row;
                                 soloCoordinatesAndValue[1] = column;
                                 soloCoordinatesAndValue[2] = item; 
-
-                                return soloCoordinatesAndValue;
                             }
-                        }
-                        
+                        }    
                     });
+
+                    if (soloCoordinatesAndValue[0] != -1)
+                        return soloCoordinatesAndValue;
                 }
             }
 
@@ -197,23 +199,28 @@ var sudoku = (function () {
         function handleEliminationRules(){
             handleEliminationRulesFrom(findCandidateCellSetRow, removeFromRow);
             handleEliminationRulesFrom(findCandidateCellSetColumn, removeFromColumn);
-        }
+        }       
 
         function handleEliminationRulesFrom(finderFunction, removalFunction){
             for (var i = 0; i < 9; i++){
                 var tripleSets = finderFunction(i, 3);
                 var matchingTripleSubsets = findMatchingTripleSubsetsFromSet(tripleSets);
                 removeSetsFrom(matchingTripleSubsets, removalFunction, i);
+                
+                if (matchingTripleSubsets.length > 0){
+                    setSolos();
+                }
+               
                 var doubleSets = reduceCandidateSetsToDoubles(tripleSets);
                 var matchingDoubles = findMatchingDoublesFromSet(doubleSets);
                 removeSetsFrom(matchingDoubles, removalFunction, i);
                 
-                
+                if (matchingDoubles.length > 0)
+                    setSolos(); 
             }
         }
 
-        function removeSetsFrom(setsToRemove, removalFunction, removalIndex)
-        {
+        function removeSetsFrom(setsToRemove, removalFunction, removalIndex){
             setsToRemove.forEach(function(candidateCellSet){
                     var numbersToRemoveArray = numbersToRemove(candidateCellSet);
 
@@ -227,18 +234,20 @@ var sudoku = (function () {
 
         function findMatchingTripleSubsetsFromSet(candidateCellSet){
             var tripleSubsetArray = [];
-            var potentialCandidateCell;
-
+            
             while (candidateCellSet.length > 0){
                 var currentCandidateCell = candidateCellSet.pop();
-                
+                var potentialCandidateCell;
+
                 if (currentCandidateCell.cell.length <= 3)
                 {
                     candidateCellSet.forEach(function(checkedCandidateCell){
 
                         if(candidateCellArraysSubset(currentCandidateCell,checkedCandidateCell)){
-                            if(potentialCandidateCell !== undefined && candidateCellArraysSubset(currentCandidateCell, potentialCandidateCell))
+                            if (potentialCandidateCell !== undefined && candidateTriple(currentCandidateCell, potentialCandidateCell, checkedCandidateCell)){
                                 tripleSubsetArray.push([currentCandidateCell, potentialCandidateCell, checkedCandidateCell]);
+                                potentialCandidateCell = undefined;
+                            }
                             else 
                                 potentialCandidateCell = checkedCandidateCell;
                         }
@@ -256,12 +265,46 @@ var sudoku = (function () {
             if (candidateCell1.cell.length == candidateCell2.cell.length){
                 if (candidateCell1.cell.length == 3)
                     return false;
-                else{
-                    //TODO write the rest of this method.
-                }
+                else if (candidateCell1.cell.length == 2){
+                    var matchingNumbers = 0;
 
+
+                    candidateCell1.cell.forEach(function(number){
+                        if (-1 != candidateCell2.cell.indexOf(number))
+                            matchingNumbers++;  
+                    });
+
+                    return matchingNumbers >= 1; 
+                }
             }
+
+            var potentialSet; 
+            var potentialSubset; 
+
+            if (candidateCell1.cell.length > candidateCell2.cell.length){
+                potentialSet = candidateCell1.cell;
+                potentialSubset = candidateCell2.cell;
+            }
+            else{
+                potentialSet = candidateCell2.cell;
+                potentialSubset = candidateCell1.cell;
+            }
+
+            var matchingNumbers;
+
+            potentialSubset.forEach(function(number){
+                if(-1 != potentialSet.indexOf(number))
+                    matchingNumbers++;
+            });
+
+            return matchingNumbers == 2;
+
         }
+
+        function candidateTriple(candidateCell1, candidateCell2, candidateCell3){
+            return candidateCellArraysSubset(candidateCell1, candidateCell2) && candidateCellArraysSubset(candidateCell1, candidateCell3) && candidateCellArraysSubset(candidateCell2, candidateCell3);
+        }
+
 
 
         function findMatchingDoublesFromSet(candidateCellSet){
@@ -357,7 +400,7 @@ var sudoku = (function () {
 
         function reduceCandidateSetsToDoubles(candidateCellSet){
             return candidateCellSet.filter(function(candidateCell){
-                return candidateCell.cell.length <= 2; 
+                return candidateCell.cell.length == 2; 
             });
         }
     };
