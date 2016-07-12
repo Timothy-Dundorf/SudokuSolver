@@ -70,8 +70,8 @@ var sudoku = (function () {
 
             for (var i = 0; i < 3; i++){
                 for (var j = 0; j < 3; j++){
-                    var checkedRow = i + firstCellOfGridCoords[0];
-                    var checkedColumn = j + firstCellOfGridCoords[1];
+                    var checkedRow = i + firstCellOfGridCoords.row;
+                    var checkedColumn = j + firstCellOfGridCoords.column;
 
                     candidateBoard[checkedRow][checkedColumn] = candidateBoard[checkedRow][checkedColumn].filter(function(value){return value != numberToRemove;});
                 }
@@ -79,9 +79,9 @@ var sudoku = (function () {
         }
 
         function firstCellOfGridCoordinates(row, column){
-            var coordinates = [-1, -1];
-            coordinates[0] = firstCellOfGridRowOrColumn(row);
-            coordinates[1] = firstCellOfGridRowOrColumn(column);
+            var coordinates = {row:-1, column:-1};
+            coordinates.row = firstCellOfGridRowOrColumn(row);
+            coordinates.column = firstCellOfGridRowOrColumn(column);
 
             return coordinates; 
         }
@@ -182,8 +182,8 @@ var sudoku = (function () {
 
             for (var i = 0; i < 3; i++){
                 for (var j = 0; j < 3; j++){
-                    var curRow = i + firstCellOfGridCoords[0];
-                    var curColumn = j + firstCellOfGridCoords[1];
+                    var curRow = i + firstCellOfGridCoords.row;
+                    var curColumn = j + firstCellOfGridCoords.column;
 
                     if (-1 != candidateBoard[curRow][curColumn].indexOf(number))
                         instances++;
@@ -262,8 +262,15 @@ var sudoku = (function () {
             if (candidateCellArraysEqual(candidateCell1, candidateCell2))
                 return true;
 
-            if (candidateCell1.cell.length == candidateCell2.cell.length){
-                if (candidateCell1.cell.length == 3)
+            if (candidateCell1.cell.length == candidateCell2.cell.length)
+                return candidateCellArraysSubsetOfSameTriple(candidateCell1, candidateCell2);
+
+            return candidateCellArraysTrueSubset(candidateCell1, candidateCell2);
+            
+        }
+
+        function candidateCellArraysSubsetOfSameTriple(candidateCell1, candidateCell2){
+             if (candidateCell1.cell.length == 3)
                     return false;
                 else if (candidateCell1.cell.length == 2){
                     var matchingNumbers = 0;
@@ -276,8 +283,9 @@ var sudoku = (function () {
 
                     return matchingNumbers >= 1; 
                 }
-            }
+        }
 
+        function candidateCellArraysTrueSubset(candidateCell1, candidateCell2){
             var potentialSet; 
             var potentialSubset; 
 
