@@ -2,6 +2,7 @@ var sudoku = (function () {
     var saga = {};
     var rowNumber = 0;
     var columnNumber = 0; 
+    var gridList = [{row:0, column:0}, {row:0, column:3}, {row:0, column:6}, {row:3, column:0}, {row:3, column:3}, {row:3, column:6}, {row:6, column:0}, {row:6, column:3}, {row:6, column:6}];
     var candidateBoard = createArray(9, 9);
 
     for (var i = 0; i < 9; i++){
@@ -76,6 +77,10 @@ var sudoku = (function () {
                     candidateBoard[checkedRow][checkedColumn] = candidateBoard[checkedRow][checkedColumn].filter(function(value){return value != numberToRemove;});
                 }
             }
+        }
+
+        function removeFromGridNumber(grid, numbersToRemove){
+            removeFromGrid(gridList[grid].row, gridList[grid].column, numbersToRemove);
         }
 
         function firstCellOfGridCoordinates(row, column){
@@ -199,6 +204,7 @@ var sudoku = (function () {
         function handleEliminationRules(){
             handleEliminationRulesFrom(findCandidateCellSetRow, removeFromRow);
             handleEliminationRulesFrom(findCandidateCellSetColumn, removeFromColumn);
+            handleEliminationRulesFrom(findCandidateCellSetGrid, removeFromGridNumber);
         }       
 
         function handleEliminationRulesFrom(finderFunction, removalFunction){
@@ -389,20 +395,20 @@ var sudoku = (function () {
             return sets;
         }
 
-        function findCandidateCellSetGrid(row, column, setSize){
+        function findCandidateCellSetGrid(grid, setSize){
             var sets = [];
-            var firstCellOfGridCoords = firstCellOfGridCoordinates(row, column);
 
             for (var i = 0; i < 3; i++){
                 for (var j = 0; j < 3; j++){
-                    var checkedRow = i + firstCellOfGridCoords[0];
-                    var checkedColumn = j + firstCellOfGridCoords[1];
+                    var checkedRow = i + gridList[grid].row;
+                    var checkedColumn = j + gridList[grid].column;
                     var candidateCell = candidateBoard[checkedRow][checkedColumn];
 
-                     if (setSize >= candidateCell.length)
-                    sets.push({row:row, column:column, cell:candidateCell});
+                    if (setSize >= candidateCell.length)
+                        sets.push({row:checkedRow, column:checkedColumn, cell:candidateCell});
                 }
             }
+                
             return sets;
         }
 
